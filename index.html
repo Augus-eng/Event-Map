@@ -1,0 +1,350 @@
+/*
+ *项目：新冠疫情实时地图
+ *时间：2021年11月10日
+ *作者：慕辞
+ */
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>实时疫情图</title>
+    <script type="text/javascript" src="static/echarts.min.js"></script>
+    <script src="https://www.makeapie.com/dep/echarts/map/js/world.js"></script>
+    <script src="https://www.makeapie.com/dep/echarts/map/js/china.js"></script>
+
+    <script>
+        var _hmt = _hmt || [];
+        (function () {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?72373e67ad82598385e9c651b4d0aca6";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+    <style>
+        body {
+            height: 800px;
+            overflow: hidden;
+        }
+
+        *:focus {
+            outline: none;
+        }
+
+        #main {
+            max-width: px;
+            margin: auto;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            text-align: center;
+            line-height: 0.5;
+            border-bottom: 1px solid #ebebeb;
+
+        }
+
+        .info > div {
+            flex-grow: 1;
+            margin: 0 4px;
+            border-radius: 3px;
+        }
+
+        .info > div > p:first-child {
+            font-size: 12px;
+        }
+
+        .title {
+            text-align: center;
+        }
+
+        .copyright {
+            font-size: 10px;
+            text-align: right;
+            color: #909399;
+        }
+
+        .copyright a {
+            text-decoration: none;
+        }
+
+        .copyright a:hover, a:active, a:visited, a:link, a:focus {
+            color: #909399;
+        }
+
+        .map {
+            position: relative;
+            height: 400px;
+        }
+
+        #worldmap {
+            height: 380px;
+        }
+
+        .copyright {
+            position: relative;
+            width: 100%;
+        }
+
+        .copyright, .map {
+            top: -65px;
+        }
+
+        .hide {
+            display: none;
+        }
+
+        #worldmap {
+            width: 100%;
+        }
+
+        .button {
+            display: inline-block;
+            margin-bottom: 0;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            -ms-touch-action: manipulation;
+            touch-action: manipulation;
+            cursor: pointer;
+            background-image: none;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            height: 28px;
+            padding: 0 15px;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: color .2s linear, background-color .2s linear, border .2s linear, box-shadow .2s linear;
+            color: #515a6e;
+            background-color: #fff;
+            border-color: #dcdee2;
+        }
+
+        .btn-active {
+            color: #fff;
+            background-color: #2d8cf0;
+            border-color: #2d8cf0;
+        }
+
+        .tab {
+            margin-top: 5px;
+            text-align: center;
+        }
+    </style>
+    </head>
+
+<body>
+<div>
+    <div class="title">2021新冠实时疫情图</div>
+    <div class="tab">
+        <button onclick="showcn(this)" id="btn-cn" class="button btn-active">中国</button>
+        <button onclick="showworld(this)" id="btn-world" class="button">全球</button>
+    </div>
+    <div class="info" id="cninfo">
+        <div>
+            <p>现存确诊</p>
+            <p style="color: rgb(247, 76, 49);">3199</p>
+        </div>
+        <div>
+            <p>境外输入</p>
+            <p style="color: rgb(247, 130, 7);">9779</p>
+        </div>
+        <div>
+            <p>死亡</p>
+            <p style="color: rgb(93, 112, 146);">5696</p>
+        </div>
+        <div>
+            <p>治愈</p>
+            <p style="color: rgb(40, 183, 163);">117880</p>
+        </div>
+    </div>
+
+    <div class="info" id="worldinfo">
+
+        <div>
+            <p>现存确诊</p>
+            <p style="color: rgb(247, 76, 49);">37968471</p>
+        </div>
+        <div>
+            <p>累计确诊</p>
+            <p style="color: rgb(247, 130, 7);">251091492</p>
+        </div>
+
+        <div>
+            <p>累计死亡</p>
+            <p style="color: rgb(93, 112, 146);">5061958</p>
+        </div>
+    </div>
+</div>
+<div id="cnmap" class="map"></div>
+<div id="worldmap" class="map"></div>
+<div class="copyright"><a target="_blank" href="http://muci.hostfree.wang">首页</a></div>
+<script type="text/javascript">
+    var dom = document.getElementById("cnmap");
+    var myChart = echarts.init(dom, null, {renderer: 'svg'});
+    const cnoption = {
+        bottom: '10px',
+        tooltip: {
+            show: true,
+            trigger: 'item'
+        },
+        dataRange: {
+            x: 'center',
+            orient: 'horizontal',
+            min: 0,
+            max: 20000,
+            text: ['高', '低'], // 文本，默认为数值文本
+            splitNumber: 0,
+            splitList: [
+                {start: 1000, end: 99999},
+                {start: 100, end: 1000},
+                {start: 50, end: 100}, {start: 10, end: 50},
+                {start: 1, end: 10},
+                {start: 0, end: 0},
+            ],
+            inRange: {
+                color: ['#fff', '#fff5c9', '#FDEBCF', '#F59E83', '#F59E83', '#CB2A2F', '#e6ac53', '#70161D']
+            }
+        },
+        series: [
+            {
+
+                label: {
+
+                    normal: {
+                        fontFamily: 'Microsoft YaHei',
+                        fontSize: 9,
+                        show: true,
+
+                    },
+                    emphasis: {
+                        show: false
+                    }
+                },
+                name: '现存确诊',
+                type: 'map',
+                mapType: 'china',
+                zoom: 1,
+                itemStyle: {
+                    normal: {
+                        borderWidth: .5,//区域边框宽度
+                        borderColor: '#B6B6B6',//区域边框颜色
+                        areaColor: "#ffefd5",//区域颜色
+
+                    },
+                },
+                data: JSON.parse('[{"name":"\u53f0\u6e7e","value":1856},{"name":"\u9ed1\u9f99\u6c5f","value":252},{"name":"\u7518\u8083","value":124},{"name":"\u9999\u6e2f","value":119},{"name":"\u6cb3\u5317","value":113},{"name":"\u4e91\u5357","value":92},{"name":"\u5185\u8499\u53e4","value":91},{"name":"\u4e0a\u6d77","value":68},{"name":"\u6cb3\u5357","value":50},{"name":"\u8fbd\u5b81","value":50},{"name":"\u5317\u4eac","value":46},{"name":"\u5e7f\u4e1c","value":45},{"name":"\u5e7f\u897f","value":45},{"name":"\u56db\u5ddd","value":40},{"name":"\u5b81\u590f","value":40},{"name":"\u5c71\u4e1c","value":34},{"name":"\u6d59\u6c5f","value":31},{"name":"\u798f\u5efa","value":23},{"name":"\u9655\u897f","value":21},{"name":"\u5929\u6d25","value":14},{"name":"\u9752\u6d77","value":12},{"name":"\u6c5f\u897f","value":11},{"name":"\u91cd\u5e86","value":7},{"name":"\u6c5f\u82cf","value":5},{"name":"\u6e56\u5357","value":5},{"name":"\u8d35\u5dde","value":5},{"name":"\u6e56\u5317","value":4},{"name":"\u5409\u6797","value":4},{"name":"\u5c71\u897f","value":3},{"name":"\u6fb3\u95e8","value":2},{"name":"\u5b89\u5fbd","value":0},{"name":"\u65b0\u7586","value":0},{"name":"\u6d77\u5357","value":0},{"name":"\u897f\u85cf","value":0}]'),
+            },
+        ],
+        animation: false,
+    };
+    myChart.setOption(cnoption, true);
+
+
+    var worldmapdom = document.getElementById("worldmap");
+    var worldChart = echarts.init(worldmapdom, null, {renderer: 'svg'});
+    const worldoption = {
+        bottom: '10px',
+        tooltip: {
+            show: true,
+            trigger: 'item',
+            formatter: function (val) {
+                return val.data.provinceName + '<br>' + '现存确诊: ' + val.data.value
+            }
+        },
+        dataRange: {
+            x: 'center',
+            orient: 'horizontal',
+            min: 0,
+            max: 9999999,
+            text: ['高', '低'], // 文本，默认为数值文本
+            splitNumber: 0,
+            splitList: [
+                {start: 100000, end: 999999999},
+                {start: 10000, end: 999999},
+                {start: 1000, end: 10000},
+                {start: 99, end: 999},
+                {start: 10, end: 99},
+                {start: 0, end: 9},
+            ],
+            inRange: {
+                color: ['#FAEBD2', '#D56355', '#BB3937','#cb2a2f', '#772526','#5e0a0b']
+            }
+        },
+        series: [
+            {
+
+                label: {
+
+                    normal: {
+                        fontFamily: 'Microsoft YaHei',
+                        fontSize: 9,
+                        show: false
+                    },
+                    emphasis: {
+                        show: false
+                    }
+                },
+                name: '现存确诊',
+                type: 'map',
+                mapType: 'world',
+                zoom: 0.8,
+                itemStyle: {
+                    normal: {label: {show: true, color: '#333'}, borderWidth: 0},
+                },
+                data: JSON.parse('[{"name":"United States","value":8361449,"provinceName":"\u7f8e\u56fd"},{"name":"France","value":6831424,"provinceName":"\u6cd5\u56fd"},{"name":"United Kingdom","value":2713656,"provinceName":"\u82f1\u56fd"},{"name":"Netherlands","value":2210294,"provinceName":"\u8377\u5170"},{"name":"Turkey","value":1409855,"provinceName":"\u571f\u8033\u5176"},{"name":"Belgium","value":1369093,"provinceName":"\u6bd4\u5229\u65f6"},{"name":"Serbia","value":1176324,"provinceName":"\u585e\u5c14\u7ef4\u4e9a"},{"name":"Sweden","value":1157066,"provinceName":"\u745e\u5178"},{"name":"Russia","value":998931,"provinceName":"\u4fc4\u7f57\u65af"},{"name":"Kazakhstan","value":891309,"provinceName":"\u54c8\u8428\u514b\u65af\u5766"},{"name":"Brazil","value":782207,"provinceName":"\u5df4\u897f"},{"name":"Iran (Islamic Republic of)","value":724628,"provinceName":"\u4f0a\u6717"},{"name":"India","value":680709,"provinceName":"\u5370\u5ea6"},{"name":"Ukraine","value":621354,"provinceName":"\u4e4c\u514b\u5170"},{"name":"Switzerland","value":557648,"provinceName":"\u745e\u58eb"},{"name":"Ireland","value":438472,"provinceName":"\u7231\u5c14\u5170"},{"name":"Greece","value":404694,"provinceName":"\u5e0c\u814a"},{"name":"Mexico","value":403785,"provinceName":"\u58a8\u897f\u54e5"},{"name":"Germany","value":367500,"provinceName":"\u5fb7\u56fd"},{"name":"Slovenia","value":348815,"provinceName":"\u65af\u6d1b\u6587\u5c3c\u4e9a"},{"name":"Poland","value":280449,"provinceName":"\u6ce2\u5170"},{"name":"Slovakia","value":253081,"provinceName":"\u65af\u6d1b\u4f10\u514b"},{"name":"Honduras","value":249863,"provinceName":"\u6d2a\u90fd\u62c9\u65af"},{"name":"Italy","value":197519,"provinceName":"\u610f\u5927\u5229"},{"name":"Puerto Rico","value":182361,"provinceName":"\u6ce2\u591a\u9ece\u5404"},{"name":"Bulgaria","value":163607,"provinceName":"\u4fdd\u52a0\u5229\u4e9a"},{"name":"Austria","value":160541,"provinceName":"\u5965\u5730\u5229"},{"name":"Australia","value":152392,"provinceName":"\u6fb3\u5927\u5229\u4e9a"},{"name":"Georgia","value":149868,"provinceName":"\u683c\u9c81\u5409\u4e9a"},{"name":"Romania","value":148351,"provinceName":"\u7f57\u9a6c\u5c3c\u4e9a"},{"name":"Czechia","value":133899,"provinceName":"\u6377\u514b"},{"name":"Finland","value":132292,"provinceName":"\u82ac\u5170"},{"name":"Iraq","value":128611,"provinceName":"\u4f0a\u62c9\u514b"},{"name":"Vietnam","value":127817,"provinceName":"\u8d8a\u5357"},{"name":"Norway","value":126981,"provinceName":"\u632a\u5a01"},{"name":"Costa Rica","value":117854,"provinceName":"\u54e5\u65af\u8fbe\u9ece\u52a0"},{"name":"Cuba","value":106591,"provinceName":"\u53e4\u5df4"},{"name":"Spain","value":103612,"provinceName":"\u897f\u73ed\u7259"},{"name":"Croatia","value":98452,"provinceName":"\u514b\u7f57\u5730\u4e9a"},{"name":"Libya","value":94822,"provinceName":"\u5229\u6bd4\u4e9a"},{"name":"Thailand","value":90401,"provinceName":"\u6cf0\u56fd"},{"name":"Azerbaijan","value":79274,"provinceName":"\u963f\u585e\u62dc\u7586"},{"name":"Sri Lanka","value":73315,"provinceName":"\u65af\u91cc\u5170\u5361"},{"name":"Armenia","value":72702,"provinceName":"\u4e9a\u7f8e\u5c3c\u4e9a"},{"name":"occupied Palestinian territory","value":72601,"provinceName":"\u5df4\u52d2\u65af\u5766"},{"name":"Hungary","value":68586,"provinceName":"\u5308\u7259\u5229"},{"name":"Guatemala","value":67776,"provinceName":"\u5371\u5730\u9a6c\u62c9"},{"name":"Algeria","value":66253,"provinceName":"\u963f\u5c14\u53ca\u5229\u4e9a"},{"name":"Jordan","value":59892,"provinceName":"\u7ea6\u65e6"},{"name":"Malaysia","value":57275,"provinceName":"\u9a6c\u6765\u897f\u4e9a"},{"name":"Bosnia and Herzegovina","value":55539,"provinceName":"\u6ce2\u9ed1"},{"name":"R\u00e9union","value":54749,"provinceName":"\u7559\u5c3c\u65fa"},{"name":"Argentina","value":54592,"provinceName":"\u963f\u6839\u5ef7"},{"name":"Guadeloupe","value":53654,"provinceName":"\u74dc\u5fb7\u7f57\u666e\u5c9b"},{"name":"Chile","value":51087,"provinceName":"\u667a\u5229"},{"name":"Venezuela","value":50831,"provinceName":"\u59d4\u5185\u745e\u62c9"},{"name":"Denmark","value":50378,"provinceName":"\u4e39\u9ea6"},{"name":"Lebanon","value":44947,"provinceName":"\u9ece\u5df4\u5ae9"},{"name":"French Guiana","value":44713,"provinceName":"\u6cd5\u5c5e\u572d\u4e9a\u90a3"},{"name":"Martinique","value":42969,"provinceName":"\u9a6c\u63d0\u5c3c\u514b"},{"name":"Ecuador","value":42514,"provinceName":"\u5384\u74dc\u591a\u5c14"},{"name":"Swaziland","value":42277,"provinceName":"\u65af\u5a01\u58eb\u5170"},{"name":"Korea","value":42166,"provinceName":"\u97e9\u56fd"},{"name":"Lithuania","value":41085,"provinceName":"\u7acb\u9676\u5b9b"},{"name":"Bolivia","value":38934,"provinceName":"\u73bb\u5229\u7ef4\u4e9a"},{"name":"Laos","value":38287,"provinceName":"\u8001\u631d"},{"name":"Egypt","value":35184,"provinceName":"\u57c3\u53ca"},{"name":"Cyprus","value":34615,"provinceName":"\u585e\u6d66\u8def\u65af"},{"name":"Dominican Republic","value":34247,"provinceName":"\u591a\u7c73\u5c3c\u52a0"},{"name":"Canada","value":34189,"provinceName":"\u52a0\u62ff\u5927"},{"name":"Portugal","value":33290,"provinceName":"\u8461\u8404\u7259"},{"name":"Jamaica","value":30817,"provinceName":"\u7259\u4e70\u52a0"},{"name":"Philippines","value":30087,"provinceName":"\u83f2\u5f8b\u5bbe"},{"name":"Uganda","value":30004,"provinceName":"\u4e4c\u5e72\u8fbe"},{"name":"Oman","value":29778,"provinceName":"\u963f\u66fc"},{"name":"Estonia","value":28159,"provinceName":"\u7231\u6c99\u5c3c\u4e9a"},{"name":"Latvia","value":27912,"provinceName":"\u62c9\u8131\u7ef4\u4e9a"},{"name":"Colombia","value":27194,"provinceName":"\u54e5\u4f26\u6bd4\u4e9a"},{"name":"Bangladesh","value":26426,"provinceName":"\u5b5f\u52a0\u62c9\u56fd"},{"name":"Dem. Rep. Congo","value":25681,"provinceName":"\u521a\u679c\uff08\u91d1\uff09"},{"name":"Tanzania","value":25304,"provinceName":"\u5766\u6851\u5c3c\u4e9a"},{"name":"Afghanistan","value":24377,"provinceName":"\u963f\u5bcc\u6c57"},{"name":"French Polynesia","value":23468,"provinceName":"\u6cd5\u5c5e\u6ce2\u5229\u5c3c\u897f\u4e9a"},{"name":"Pakistan","value":22733,"provinceName":"\u5df4\u57fa\u65af\u5766"},{"name":"Singapore","value":22571,"provinceName":"\u65b0\u52a0\u5761"},{"name":"Cameroon","value":22184,"provinceName":"\u5580\u9ea6\u9686"},{"name":"Suriname","value":21527,"provinceName":"\u82cf\u91cc\u5357"},{"name":"Mayotte","value":20524,"provinceName":"\u9a6c\u7ea6\u7279"},{"name":"The Republic of Burundi","value":20120,"provinceName":"\u5e03\u9686\u8fea\u5171\u548c\u56fd"},{"name":"Morocco","value":19454,"provinceName":"\u6469\u6d1b\u54e5"},{"name":"Botswana","value":19094,"provinceName":"\u535a\u8328\u74e6\u7eb3"},{"name":"Syrian\u00a0ArabRepublic","value":18877,"provinceName":"\u53d9\u5229\u4e9a"},{"name":"Uzbekstan","value":17954,"provinceName":"\u4e4c\u5179\u522b\u514b\u65af\u5766"},{"name":"Belarus","value":17396,"provinceName":"\u767d\u4fc4\u7f57\u65af"},{"name":"Ethiopia","value":17237,"provinceName":"\u57c3\u585e\u4fc4\u6bd4\u4e9a"},{"name":"Mauritius","value":16464,"provinceName":"\u6bdb\u91cc\u6c42\u65af"},{"name":"South Africa","value":16388,"provinceName":"\u5357\u975e"},{"name":"The Republic of El Salvador","value":14485,"provinceName":"\u8428\u5c14\u74e6\u591a"},{"name":"Lesotho","value":14196,"provinceName":"\u83b1\u7d22\u6258"},{"name":"Tunisia","value":14042,"provinceName":"\u7a81\u5c3c\u65af"},{"name":"Cambodia","value":13436,"provinceName":"\u67ec\u57d4\u5be8"},{"name":"Montenegro","value":13202,"provinceName":"\u9ed1\u5c71"},{"name":"Barbados","value":13070,"provinceName":"\u5df4\u5df4\u591a\u65af"},{"name":"Republic of Moldova","value":12972,"provinceName":"\u6469\u5c14\u591a\u74e6"},{"name":"Trinidad & Tobago","value":12957,"provinceName":"\u7279\u7acb\u5c3c\u8fbe\u548c\u591a\u5df4\u54e5"},{"name":"Cura\u00e7ao","value":12498,"provinceName":"\u5e93\u62c9\u7d22\u5c9b"},{"name":"Somalia","value":12149,"provinceName":"\u7d22\u9a6c\u91cc"},{"name":"Nicaragua","value":11796,"provinceName":"\u5c3c\u52a0\u62c9\u74dc"},{"name":"Nepal","value":11199,"provinceName":"\u5c3c\u6cca\u5c14"},{"name":"New Caledonia","value":10980,"provinceName":"\u65b0\u5580\u91cc\u591a\u5c3c\u4e9a"},{"name":"Indonesia","value":9774,"provinceName":"\u5370\u5ea6\u5c3c\u897f\u4e9a"},{"name":"Congo","value":9636,"provinceName":"\u521a\u679c\uff08\u5e03\uff09"},{"name":"Belize","value":9429,"provinceName":"\u4f2f\u5229\u5179"},{"name":"Brunei Darussalam","value":8967,"provinceName":"\u6587\u83b1"},{"name":"North Macedonia","value":8898,"provinceName":"\u5317\u9a6c\u5176\u987f"},{"name":"Gabon","value":8892,"provinceName":"\u52a0\u84ec"},{"name":"Myanmar","value":8573,"provinceName":"\u7f05\u7538"},{"name":"Guyana","value":8376,"provinceName":"\u572d\u4e9a\u90a3"},{"name":"Albania","value":8059,"provinceName":"\u963f\u5c14\u5df4\u5c3c\u4e9a"},{"name":"Papua New Guinea","value":7971,"provinceName":"\u5df4\u5e03\u4e9a\u65b0\u51e0\u5185\u4e9a"},{"name":"The Republic of Yemen","value":7611,"provinceName":"\u4e5f\u95e8\u5171\u548c\u56fd"},{"name":"Rwanda","value":7123,"provinceName":"\u5362\u65fa\u8fbe"},{"name":"Ghana","value":6747,"provinceName":"\u52a0\u7eb3"},{"name":"Israel","value":5876,"provinceName":"\u4ee5\u8272\u5217"},{"name":"Nigeria","value":5428,"provinceName":"\u5c3c\u65e5\u5229\u4e9a"},{"name":"Kyrgyzstan","value":5397,"provinceName":"\u5409\u5c14\u5409\u65af\u65af\u5766"},{"name":"Sudan","value":5280,"provinceName":"\u82cf\u4e39"},{"name":"The Republic of Haiti","value":4982,"provinceName":"\u6d77\u5730"},{"name":"Saint Vincent and the Grenadines","value":4876,"provinceName":"\u5723\u6587\u68ee\u7279\u548c\u683c\u6797\u7eb3\u4e01\u65af"},{"name":"Central African Republic","value":4620,"provinceName":"\u4e2d\u975e\u5171\u548c\u56fd"},{"name":"Benin","value":3713,"provinceName":"\u8d1d\u5b81"},{"name":"Saudi Arabia","value":3679,"provinceName":"\u6c99\u7279\u963f\u62c9\u4f2f"},{"name":"Bahamas","value":3507,"provinceName":"\u5df4\u54c8\u9a6c"},{"name":"Guam","value":3478,"provinceName":"\u5173\u5c9b"},{"name":"Japan","value":3455,"provinceName":"\u65e5\u672c"},{"name":"United Arab Emirates","value":3308,"provinceName":"\u963f\u8054\u914b"},{"name":"The Republic of Fiji","value":3226,"provinceName":"\u6590\u6d4e"},{"name":"China","value":3199,"provinceName":"\u4e2d\u56fd"},{"name":"Isle of Man","value":3116,"provinceName":"\u9a6c\u6069\u5c9b"},{"name":"Togo","value":2963,"provinceName":"\u591a\u54e5"},{"name":"Angola","value":2938,"provinceName":"\u5b89\u54e5\u62c9"},{"name":"New Zealand","value":2755,"provinceName":"\u65b0\u897f\u5170"},{"name":"Namibia","value":2658,"provinceName":"\u7eb3\u7c73\u6bd4\u4e9a"},{"name":"Maldives","value":2404,"provinceName":"\u9a6c\u5c14\u4ee3\u592b"},{"name":"Mauritania","value":2315,"provinceName":"\u6bdb\u91cc\u5854\u5c3c\u4e9a"},{"name":"Uruguay","value":2313,"provinceName":"\u4e4c\u62c9\u572d"},{"name":"Luxembourg","value":2309,"provinceName":"\u5362\u68ee\u5821"},{"name":"Saint Martin","value":2306,"provinceName":"\u5723\u9a6c\u4e01\u5c9b"},{"name":"Cote d Ivoire","value":2248,"provinceName":"\u79d1\u7279\u8fea\u74e6"},{"name":"Mozambique","value":2153,"provinceName":"\u83ab\u6851\u6bd4\u514b"},{"name":"Eq.Guinea","value":1943,"provinceName":"\u8d64\u9053\u51e0\u5185\u4e9a"},{"name":"Dominica","value":1923,"provinceName":"\u591a\u7c73\u5c3c\u514b"},{"name":"Cayman Islands","value":1893,"provinceName":"\u5f00\u66fc\u7fa4\u5c9b"},{"name":"Bermuda","value":1852,"provinceName":"\u767e\u6155\u5927"},{"name":"Antigua & Barbuda","value":1852,"provinceName":"\u5b89\u63d0\u74dc\u548c\u5df4\u5e03\u8fbe"},{"name":"Sierra Leone","value":1843,"provinceName":"\u585e\u62c9\u5229\u6602"},{"name":"Saint Kitts and Nevis","value":1692,"provinceName":"\u5723\u5176\u8328\u548c\u5c3c\u7ef4\u65af"},{"name":"Saint Barthelemy","value":1656,"provinceName":"\u5723\u5df4\u6cf0\u52d2\u7c73\u5c9b"},{"name":"Panama","value":1634,"provinceName":"\u5df4\u62ff\u9a6c"},{"name":"Jersey","value":1616,"provinceName":"\u6cfd\u897f\u5c9b"},{"name":"Faroe Islands","value":1538,"provinceName":"\u6cd5\u7f57\u7fa4\u5c9b"},{"name":"Malawi","value":1511,"provinceName":"\u9a6c\u62c9\u7ef4"},{"name":"Mali","value":1511,"provinceName":"\u9a6c\u91cc"},{"name":"Seychelles","value":1419,"provinceName":"\u585e\u820c\u5c14"},{"name":"Tinor-Leste","value":1402,"provinceName":"\u4e1c\u5e1d\u6c76"},{"name":"Madagascar","value":1346,"provinceName":"\u9a6c\u8fbe\u52a0\u65af\u52a0"},{"name":"Guinea","value":1306,"provinceName":"\u51e0\u5185\u4e9a"},{"name":"Qatar","value":1304,"provinceName":"\u5361\u5854\u5c14"},{"name":"Cabo Verde","value":1292,"provinceName":"\u4f5b\u5f97\u89d2"},{"name":"Kenya","value":1221,"provinceName":"\u80af\u5c3c\u4e9a"},{"name":"South Sudan","value":1186,"provinceName":"\u5357\u82cf\u4e39"},{"name":"Iceland","value":1157,"provinceName":"\u51b0\u5c9b"},{"name":"The Republic of Djibouti","value":1143,"provinceName":"\u5409\u5e03\u63d0"},{"name":"Burkina Faso","value":990,"provinceName":"\u5e03\u57fa\u7eb3\u6cd5\u7d22"},{"name":"S\u00e3o Tom\u00e9 and Pr\u00edncipe","value":928,"provinceName":"\u5723\u591a\u7f8e\u548c\u666e\u6797\u897f\u6bd4"},{"name":"Guernsey","value":855,"provinceName":"\u6839\u897f\u5c9b"},{"name":"Guinea-Bissau","value":770,"provinceName":"\u51e0\u5185\u4e9a\u6bd4\u7ecd"},{"name":"Malta","value":734,"provinceName":"\u9a6c\u8033\u4ed6"},{"name":"United States Virgin Islands","value":720,"provinceName":"\u7f8e\u5c5e\u7ef4\u5c14\u4eac\u7fa4\u5c9b"},{"name":"Gibraltar","value":678,"provinceName":"\u76f4\u5e03\u7f57\u9640"},{"name":"Anguilla","value":664,"provinceName":"\u5b89\u572d\u62c9"},{"name":"Aruba","value":631,"provinceName":"\u963f\u9c81\u5df4"},{"name":"Niger","value":521,"provinceName":"\u5c3c\u65e5\u5c14"},{"name":"Sint Maarten","value":389,"provinceName":"\u8377\u5c5e\u5723\u9a6c\u4e01"},{"name":"Zimbabwe","value":376,"provinceName":"\u6d25\u5df4\u5e03\u97e6"},{"name":"Bahrain","value":359,"provinceName":"\u5df4\u6797"},{"name":"Greenland","value":355,"provinceName":"\u683c\u9675\u5170"},{"name":"Paraguay","value":334,"provinceName":"\u5df4\u62c9\u572d"},{"name":"Saint Lucia","value":334,"provinceName":"\u5723\u5362\u897f\u4e9a"},{"name":"Northern Mariana Islands (Commonwealth of the)","value":316,"provinceName":"\u5317\u9a6c\u91cc\u4e9a\u7eb3\u7fa4\u5c9b\u8054\u90a6"},{"name":"Liechtenstein","value":314,"provinceName":"\u5217\u652f\u6566\u58eb\u767b"},{"name":"Senegal","value":303,"provinceName":"\u585e\u5185\u52a0\u5c14"},{"name":"Kuwait","value":293,"provinceName":"\u79d1\u5a01\u7279"},{"name":"Eritrea","value":239,"provinceName":"\u5384\u7acb\u7279\u91cc\u4e9a"},{"name":"Union des Comores","value":211,"provinceName":"\u79d1\u6469\u7f57"},{"name":"Turks & Caicos\u00a0Islands","value":208,"provinceName":"\u7279\u514b\u65af\u548c\u51ef\u79d1\u65af\u7fa4\u5c9b"},{"name":"Andorra","value":199,"provinceName":"\u5b89\u9053\u5c14"},{"name":"San Marino","value":196,"provinceName":"\u5723\u9a6c\u529b\u8bfa"},{"name":"Grenada","value":183,"provinceName":"\u683c\u6797\u90a3\u8fbe"},{"name":"Bonaire, Sint Eustatius and Saba","value":174,"provinceName":"\u8377\u5170\u52a0\u52d2\u6bd4\u5730\u533a"},{"name":"International conveyance (Diamond Princess)","value":154,"provinceName":"\u94bb\u77f3\u516c\u4e3b\u53f7\u90ae\u8f6e"},{"name":"The Republic of Zambia","value":152,"provinceName":"\u8d5e\u6bd4\u4e9a\u5171\u548c\u56fd"},{"name":"Monaco","value":147,"provinceName":"\u6469\u7eb3\u54e5"},{"name":"Liberia","value":140,"provinceName":"\u5229\u6bd4\u91cc\u4e9a"},{"name":"VirginIslands,British","value":133,"provinceName":"\u82f1\u5c5e\u7ef4\u5c14\u4eac\u7fa4\u5c9b"},{"name":"Chad","value":75,"provinceName":"\u4e4d\u5f97"},{"name":"Gambia","value":44,"provinceName":"\u5188\u6bd4\u4e9a"},{"name":"Bhutan","value":27,"provinceName":"\u4e0d\u4e39"},{"name":"Falkland Islands","value":15,"provinceName":"\u798f\u514b\u5170\u7fa4\u5c9b"},{"name":"Montserrat","value":10,"provinceName":"\u8499\u7279\u585e\u62c9\u7279"},{"name":"Holy See","value":2,"provinceName":"\u68b5\u8482\u5188"},{"name":"Saint Pierre and Miquelon","value":1,"provinceName":"\u5723\u76ae\u57c3\u5c14\u548c\u5bc6\u514b\u9686\u7fa4\u5c9b"},{"name":"Tajikistan","value":-375,"provinceName":"\u5854\u5409\u514b\u65af\u5766"},{"name":"Mongolia","value":-56462,"provinceName":"\u8499\u53e4"},{"name":"Peru","value":-179675,"provinceName":"\u79d8\u9c81"}]'),
+            },
+        ],
+        animation: false,
+    };
+    worldChart.setOption(worldoption, true);
+    worldChart.resize();
+
+    worldmap = document.getElementById("worldmap");
+    cnmap = document.getElementById("cnmap");
+    cninfo = document.getElementById("cninfo");
+    worldinfo = document.getElementById("worldinfo");
+    btncn = document.getElementById('btn-cn');
+    btnworld = document.getElementById('btn-world');
+
+
+
+        cnmap.style.display = 'none';
+    worldmap.style.display = 'block';
+    cninfo.style.display = 'none';
+    worldinfo.style.display = 'flex';
+    btncn.className = 'button';
+    btnworld.className = 'button btn-active';
+    
+
+
+    function showcn(e) {
+
+        cnmap.style.display = 'block';
+        worldmap.style.display = 'none';
+        cninfo.style.display = 'flex';
+        worldinfo.style.display = 'none';
+        btncn.className = 'button btn-active';
+        btnworld.className = 'button';
+    }
+
+    function showworld(e) {
+        worldmap.style.display = 'block';
+        cnmap.style.display = 'none';
+        cninfo.style.display = 'none';
+        worldinfo.style.display = 'flex';
+        btncn.className = 'button';
+        btnworld.className = 'button btn-active';
+    }
+</script>
+</body>
+</html>
